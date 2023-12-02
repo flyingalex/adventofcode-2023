@@ -1,89 +1,67 @@
+use std::collections::HashMap;
 use std::path::Path;
+use std::ptr::hash;
 use crate::utils::read_lines;
 
-fn is_digit_word(idx: usize, chars: &Vec<char>) -> Option<u32> {
-    let digits: Vec<&str> = vec!["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
-    let len = chars.len();
-    // check numbr word with 3,4,5 characters
-    for r in [2, 3, 4] {
-        if (idx + r) < len {
-            if let Some(found) = digits.iter().position(|&d| d == chars[idx..=idx + r].iter().collect::<String>()) {
-                return Some(found as u32 + 1);
-            }
-        }
-    }
-
-    None
-}
-
-fn find_digit(idx: usize, chars: &Vec<char>, check_digit_word: bool) -> u32 {
-    let mut found = 0;
-    let c = chars[idx];
-    // check digit number
-    if c.is_ascii_digit() {
-        found = c.to_digit(10).unwrap();
-        // check digit word
-    } else if check_digit_word && let Some(num) = is_digit_word(idx, chars) {
-        found = num;
-    }
-    found
-}
-
-pub fn calibration_value(file: &Path, check_digit_word: bool) -> u32 {
+fn sum_games_id(file: &Path) -> u32 {
+    let cubes_in_bag = HashMap::from([
+        ("red", 12),
+        ("green", 13),
+        ("blue", 14),
+    ]);
     read_lines(file)
         .unwrap()
         .map(|l| {
-            let mut first = 0;
-            let mut last = 0;
-            let mut first_idx = 0;
-            let chars = l.unwrap().chars().collect::<Vec<char>>();
-            let mut last_idx = chars.len() - 1;
-
-            loop {
-                if first == 0 {
-                    first = find_digit(first_idx, &chars, check_digit_word);
+            let strs = l.unwrap();
+            let sub_strs = strs.split(&[':', ';'][..]).collect::<Vec<&str>>();
+            let mut id = 0;
+            sub_strs.iter().for_each(|&s| {
+                if s.contains("Game") {
+                    id = s.split(' ').last().unwrap().parse::<u32>().unwrap();
+                } else {
+                    s
+                        .split(&[' ', ','][..])
+                        .filter(|&s| !s.is_empty())
+                        .collect::<Vec<&str>>()
+                        .chunks(2)
+                        .for_each(|w| {
+                            let num = w[0].parse::<i32>().unwrap();
+                            if let Some(&total) = cubes_in_bag.get(w[1]) && total < num {
+                                id = 0;
+                            }
+                        })
                 }
-
-                if last == 0 {
-                    last = find_digit(last_idx, &chars, check_digit_word);
-                }
-
-                if first != 0 && last != 0 {
-                    break
-                }
-                first_idx += 1;
-                last_idx -= 1;
-            }
-            (first * 10) + last
+            });
+            id
         })
         .sum()
 }
 
 #[cfg(test)]
-mod tests {
+mod day2_tests {
     use super::*;
 
     #[test]
-    fn day1_1_test() {
-        let result = calibration_value(Path::new("src/day1/input1_test.txt"), false);
-        assert_eq!(result, 142);
+    fn day2_1_test() {
+        let result = sum_games_id(Path::new("src/day2/day2_input_test1.txt"));
+        assert_eq!(result, 8);
     }
 
     #[test]
-    fn day1_1_answer() {
-        let result = calibration_value(Path::new("src/day1/day1_input.txt"), false);
-        assert_eq!(result, 55621);
+    fn day2_1_answer() {
+        let result = sum_games_id(Path::new("src/day2/day2_input.txt"));
+        assert_eq!(result, 2169);
     }
 
     #[test]
-    fn day1_2_test() {
-        let result = calibration_value(Path::new("src/day1/input2_test.txt"), true);
+    fn day2_2_test() {
+        let result = sum_games_id(Path::new("src/day2/day2_input_test2.txt"));
         assert_eq!(result, 281);
     }
 
     #[test]
-    fn day1_2_answer() {
-        let result = calibration_value(Path::new("src/day1/day1_input.txt"), true);
+    fn day2_2_answer() {
+        let result = sum_games_id(Path::new("src/day2/day2_input.txt"));
         assert_eq!(result, 53592);
     }
 }
