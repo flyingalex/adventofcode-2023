@@ -3,13 +3,6 @@ use std::path::Path;
 use regex::Regex;
 use crate::utils::read_lines;
 
-#[derive(Debug)]
-struct Hand {
-    strength: String,
-    bid: u64,
-    card_map: HashMap<char, u64>,
-}
-
 fn format_data(file: &Path) -> (Vec<u64>, HashMap<String, Vec<String>>) {
     let mut directions = vec![];
     let mut route_map = HashMap::new();
@@ -27,7 +20,7 @@ fn format_data(file: &Path) -> (Vec<u64>, HashMap<String, Vec<String>>) {
                 }).collect();
                 directions = camel_card;
             } else if !strs.is_empty() {
-                let re = Regex::new(r"(?P<start>[A-Z]+) = \((?P<left>[A-Z]+), (?P<right>[A-Z]+)\)").unwrap();
+                let re = Regex::new(r"(?P<start>[0-9A-Z]+) = \((?P<left>[0-9A-Z]+), (?P<right>[0-9A-Z]+)\)").unwrap();
                 let caps = re.captures(&strs).unwrap();
                 route_map.insert(caps["start"].to_string(), vec![
                     caps["left"].to_string(),
@@ -40,7 +33,7 @@ fn format_data(file: &Path) -> (Vec<u64>, HashMap<String, Vec<String>>) {
 }
 
 // 1, 2, 2,  3, 3, 4, 5
-fn total_winnings(directions: &Vec<u64>, route_map: &HashMap<String, Vec<String>>) -> u64 {
+fn get_steps(directions: &Vec<u64>, route_map: &HashMap<String, Vec<String>>) -> u64 {
     let mut count = 0;
     let mut start_point = "AAA";
     loop {
@@ -58,6 +51,35 @@ fn total_winnings(directions: &Vec<u64>, route_map: &HashMap<String, Vec<String>
     count
 }
 
+fn get_steps2(directions: &Vec<u64>, route_map: &HashMap<String, Vec<String>>) -> u64 {
+    let start_points = route_map.keys().filter(|r| r.ends_with('A')).collect::<Vec<&String>>();
+    let mut steps_to_end = vec![0; start_points.len()];
+    for (idx, &start_point) in start_points.iter().enumerate() {
+        let mut count = 0;
+        let mut new_start_point = start_point;
+        loop {
+            for d in directions {
+                count += 1;
+                new_start_point = route_map.get(new_start_point).unwrap().get(*d as usize).unwrap();
+                if new_start_point.ends_with('Z') {
+                    steps_to_end[idx] = count;
+                    break;
+                }
+            }
+            if new_start_point.ends_with('Z') {
+                break;
+            }
+        }
+
+        if steps_to_end.iter().all(|&s| s > 0) {
+            break;
+        }
+    }
+
+    // get Least common multiple
+    steps_to_end.iter().fold(steps_to_end[0], |acc, &x| num::integer::lcm(acc, x))
+}
+
 #[cfg(test)]
 mod day8_tests {
     use super::*;
@@ -65,28 +87,28 @@ mod day8_tests {
     #[test]
     fn day8_1_test() {
         let (directions, route_map) = format_data(Path::new("src/day8/day8_input_test.txt"));
-        let result = total_winnings(&directions, &route_map);
+        let result = get_steps(&directions, &route_map);
         assert_eq!(result, 6);
     }
 
     #[test]
     fn day8_1_answer() {
         let (directions, route_map) = format_data(Path::new("src/day8/day8_input.txt"));
-        let result = total_winnings(&directions, &route_map);
+        let result = get_steps(&directions, &route_map);
         assert_eq!(result, 11309);
     }
 
     #[test]
     fn day8_2_test() {
-        let (directions, route_map) = format_data(Path::new("src/day8/day8_input_test.txt"));
-        let result = total_winnings(&directions, &route_map);
-        assert_eq!(result, 5905);
+        let (directions, route_map) = format_data(Path::new("src/day8/day8_input_test2.txt"));
+        let result = get_steps2(&directions, &route_map);
+        assert_eq!(result, 6);
     }
 
     #[test]
     fn day8_2_answer() {
         let (directions, route_map) = format_data(Path::new("src/day8/day8_input.txt"));
-        let result = total_winnings(&directions, &route_map);
-        assert_eq!(result, 249356515);
+        let result = get_steps2(&directions, &route_map);
+        assert_eq!(result, 13740108158591);
     }
 }
