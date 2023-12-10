@@ -17,7 +17,6 @@ fn format_data(file: &Path, has_joker: bool) -> (Vec<Hand>, HashMap<char, u64>) 
             let strs = l.unwrap();
             let camel_card = strs.split(' ').filter(|s| !s.is_empty()).collect::<Vec<&str>>();
             let mut camel_card_map: HashMap<char, u64> = HashMap::new();
-            let mut joker_card_map: HashMap<char, u64> = HashMap::new();
 
             camel_card[0].chars().for_each(|c| {
                 if camel_card_map.get(&c).is_some() {
@@ -28,7 +27,7 @@ fn format_data(file: &Path, has_joker: bool) -> (Vec<Hand>, HashMap<char, u64>) 
             });
 
             if has_joker {
-                joker_card_map = camel_card_map.clone();
+                let mut joker_card_map = camel_card_map.clone();
                 if camel_card_map.contains_key(&'J') {
                     joker_card_map.remove(&'J');
                     let mut max_key = ' ';
