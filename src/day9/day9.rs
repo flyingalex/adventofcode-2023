@@ -89,6 +89,6 @@ mod day9_tests {
     fn day9_2_answer() {
         let histories = format_data(Path::new("src/day9/day9_input.txt"));
         let result = get_extrapolated_values2(histories);
-        assert_eq!(result, -14929);
+        assert_eq!(result, 975);
     }
 }

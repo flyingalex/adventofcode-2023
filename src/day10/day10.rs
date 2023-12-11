@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
+use num::Integer;
 use crate::utils::read_lines;
 
 #[derive(Debug, Clone)]
@@ -36,23 +37,6 @@ fn format_data(file: &Path) -> (Vec<Vec<char>>, StartPoint) {
     (data, start_point)
 }
 
-/*
-......
-.7-F7-.
-..FJ|7.
-.SJLL7.
-.|F--J.
-.LJ.LJ.
-......
-
-......
-...45..
-..236..
-.01.78.
-.14567.
-.23....
-......
- */
 fn init_start_points(tiles: &Vec<Vec<char>>, start_point: StartPoint) -> Vec<StartPoint> {
     let mut points = vec![];
     // only these can be start point at top, down left, right
@@ -104,7 +88,7 @@ fn get_around_points(tiles: &Vec<Vec<char>>, start_point: StartPoint) -> Vec<Sta
     points
 }
 
-fn get_steps(tiles: Vec<Vec<char>>, start_point: StartPoint) -> i64 {
+fn get_steps(tiles: &Vec<Vec<char>>, start_point: StartPoint) -> (i64, Vec<Vec<bool>>) {
     let mut count = 1;
     let mut looped = vec![vec![false; tiles[0].len()]; tiles.len()];
     looped[start_point.row][start_point.col] = true;
@@ -112,7 +96,7 @@ fn get_steps(tiles: Vec<Vec<char>>, start_point: StartPoint) -> i64 {
     loop {
         let mut new_start_ponts = vec![];
         for start_point in start_points.into_iter() {
-            println!("start_point {:?}", start_point);
+            // println!("start_point {:?}", start_point);
             if looped[start_point.row][start_point.col] {
                 continue;
             } else {
@@ -120,7 +104,6 @@ fn get_steps(tiles: Vec<Vec<char>>, start_point: StartPoint) -> i64 {
                 let returned_points = get_around_points(&tiles, start_point);
                 returned_points.into_iter().for_each(|point| {
                     if !looped[point.row][point.col] {
-                        println!("looped[{}][{}]: {:?}", point.row, point.col, looped[point.row][point.col]);
                         new_start_ponts.push(point);
                     }
                 });
@@ -128,14 +111,85 @@ fn get_steps(tiles: Vec<Vec<char>>, start_point: StartPoint) -> i64 {
         }
         count += 1;
         start_points = new_start_ponts;
-        let unique_point_len = start_points.clone().iter().map(|p| (p.row, p.col)).collect::<HashSet<(usize, usize)>>().len();
-        println!("start_points {:?}", start_points);
-        if start_points.len() > unique_point_len {
+        let unique_points = start_points.clone().iter().map(|p| (p.row, p.col)).collect::<HashSet<(usize, usize)>>();
+        if start_points.len() > unique_points.len() {
+            // last position
+            unique_points.into_iter().for_each(|p| {
+                if start_points.iter().filter(|x| x.row == p.0 && x.col == p.1).count() > 1 {
+                    looped[p.0][p.1] = true;
+                }
+            });
             break;
         }
     }
+
+    (count, looped)
+}
+
+/*
+......
+...45..
+..236..
+.01.78.
+.14567.
+.23....
+......
+ */
+
+fn get_steps2(tiles: &Vec<Vec<char>>, start_point: StartPoint) -> u32 {
+    let (_, circle_points) = get_steps(tiles, start_point);
+    let mut count = 0;
+    let possible_top_chars = HashMap::from([
+        ('|', vec!['7', 'F', '|']),
+        ('-', vec![]),
+        ('L', vec!['|', '7', 'F']),
+        ('7', vec![]),
+        ('F', vec![]),
+        ('J', vec!['F', '7', '|']),
+        ('.', vec![]),
+        ('S', vec![]),
+    ]);
+    let possible_bottom_chars = HashMap::from([
+        ('|', vec!['J', 'L', '|']),
+        ('-', vec![]),
+        ('L', vec![]),
+        ('7', vec!['|', 'J', 'L']),
+        ('F', vec!['|', 'L', 'J']),
+        ('J', vec![]),
+        ('.', vec![]),
+        ('S', vec![]),
+    ]);
+    circle_points.iter().enumerate().for_each(|(row, line)| {
+        line.iter().enumerate().for_each(|(col, is_loop_point)| {
+            if !is_loop_point {
+                let mut right_cross_points = vec![];
+                for col_right in col + 1..line.len() {
+                    if line[col_right] {
+                        right_cross_points.push((row, col_right));
+                    }
+                }
+
+                    // check if there is one top and one bottom point at least;
+                    let mut top_count = 0;
+                    let mut bottom_count = 0;
+                    for (x, y) in &right_cross_points {
+                        if possible_top_chars[&tiles[*x][*y]].contains(&tiles[x - 1][*y]) {
+                            top_count += 1;
+                        }
+                        if possible_bottom_chars[&tiles[*x][*y]].contains(&tiles[x + 1][*y]) {
+                            bottom_count += 1;
+                        }
+                    }
+                    if top_count.min(bottom_count).is_odd() {
+                        count += 1;
+                    }
+            }
+        });
+    });
+
     count
 }
+
 
 #[cfg(test)]
 mod day10_tests {
@@ -144,28 +198,28 @@ mod day10_tests {
     #[test]
     fn day10_1_test() {
         let (tiles, start_point) = format_data(Path::new("src/day10/day10_input_test.txt"));
-        let result = get_steps(tiles, start_point);
-        assert_eq!(result, 8);
+        let result = get_steps(&tiles, start_point);
+        assert_eq!(result.0, 8);
     }
 
     #[test]
     fn day10_1_answer() {
         let (tiles, start_point) = format_data(Path::new("src/day10/day10_input.txt"));
-        let result = get_steps(tiles, start_point);
-        assert_eq!(result, 1641934234);
+        let result = get_steps(&tiles, start_point);
+        assert_eq!(result.0, 6831);
     }
 
     #[test]
     fn day10_2_test() {
-        let (tiles, start_point) = format_data(Path::new("src/day10/day10_input_test.txt"));
-        let result = get_steps(tiles, start_point);
-        assert_eq!(result, 2);
+        let (tiles, start_point) = format_data(Path::new("src/day10/day10_input_test2.txt"));
+        let result = get_steps2(&tiles, start_point);
+        assert_eq!(result, 10);
     }
 
     #[test]
     fn day10_2_answer() {
         let (tiles, start_point) = format_data(Path::new("src/day10/day10_input.txt"));
-        let result = get_steps(tiles, start_point);
-        assert_eq!(result, -14929);
+        let result = get_steps2(&tiles, start_point);
+        assert_eq!(result, 305);
     }
 }
