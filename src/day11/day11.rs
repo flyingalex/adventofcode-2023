@@ -1,6 +1,5 @@
 use std::path::Path;
 use itertools::Itertools;
-use num::Integer;
 use crate::utils::read_lines;
 
 fn format_data(file: &Path) -> (Vec<Vec<char>>, (Vec<usize>, Vec<usize>)) {
@@ -50,7 +49,7 @@ fn get_len_sum(data: &Vec<Vec<char>>, empty_row_cols: &(Vec<usize>, Vec<usize>),
     let (empty_row_idxs, empty_col_idxs) = empty_row_cols;
     let pairs = glaxies.iter().tuple_combinations().map(|(p1, p2)| (p1, p2)).collect::<Vec<(&(usize, usize), &(usize, usize))>>();
     pairs.iter().map(|(&p1, &p2)| {
-        let mut path = ((p1.0 as i32 - p2.0 as i32).abs() + (p1.1 as i32 - p2.1 as i32).abs()) as u64;
+        let path = ((p1.0 as i32 - p2.0 as i32).abs() + (p1.1 as i32 - p2.1 as i32).abs()) as u64;
         let row_added = empty_row_idxs.iter().filter(|&idx| {
            p1.0.min(p2.0) < *idx && p1.0.max(p2.0) > *idx
         }).count();
