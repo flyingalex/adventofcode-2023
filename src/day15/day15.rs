@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 use std::path::Path;
-use std::process::id;
-use itertools::Itertools;
 use crate::utils::read_lines;
 
 fn format_data(file: &Path) -> Vec<Vec<char>> {
@@ -43,7 +41,7 @@ fn get_result_of_sequence2(data: Vec<Vec<char>>) -> u64 {
             if c == '-' {
                 // remove label in box if found
                 if let Some(idx) = len_pos.get(label.as_str()) {
-                    let mut found_pos_lens = map.get_mut(idx).unwrap();
+                    let found_pos_lens = map.get_mut(idx).unwrap();
                     let index = found_pos_lens.iter().position(|(cur_label, _)| *cur_label == label).unwrap();
                     found_pos_lens.remove(index);
                     len_pos.remove(label.as_str());
@@ -55,7 +53,7 @@ fn get_result_of_sequence2(data: Vec<Vec<char>>) -> u64 {
                 // update label length in box if found
                 let num = datum[datum_idx + 1].to_digit(10).unwrap() as u64;
                 if let Some(idx) = len_pos.get(label.as_str()) {
-                    let mut found_pos_lens = map.get_mut(idx).unwrap();
+                    let found_pos_lens = map.get_mut(idx).unwrap();
                     let index = found_pos_lens.iter().position(|(cur_label, _)| *cur_label == label).unwrap();
                     found_pos_lens[index].1 = num;
                 } else {
