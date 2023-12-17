@@ -105,27 +105,30 @@ fn format_data(file: &Path) -> Vec<Vec<char>> {
     data
 }
 
-fn get_energized_tiles(data: Vec<Vec<char>>) -> u64 {
-    let start = (0, 0, Direction::Right);
-    let mut map: HashMap<(u64, u64, Direction), bool> = HashMap::from([
-        (start.clone(), true),
-    ]);
-    let mut lights = vec![start];
-    while !lights.is_empty() {
-        let light = lights.pop().unwrap();
-        let new_lights = get_next_position(light, &data);
-        for l in new_lights {
-            if !map.contains_key(&l) {
-                map.insert(l.clone(), true);
-                lights.push(l);
+fn get_energized_tiles(data: Vec<Vec<char>>, starts: Vec<(u64, u64, Direction)>) -> u64 {
+    let mut result = u64::MIN;
+    for start in starts {
+        let mut map: HashMap<(u64, u64, Direction), bool> = HashMap::from([
+            (start.clone(), true),
+        ]);
+        let mut lights = vec![start];
+        while !lights.is_empty() {
+            let light = lights.pop().unwrap();
+            let new_lights = get_next_position(light, &data);
+            for l in new_lights {
+                if !map.contains_key(&l) {
+                    map.insert(l.clone(), true);
+                    lights.push(l);
+                }
             }
         }
+        let mut unique_light_position = HashSet::new();
+        map.iter().for_each(|(k, _)| {
+            unique_light_position.insert((k.0, k.1));
+        });
+        result = result.max(unique_light_position.len() as u64)
     }
-    let mut unique_light_position = HashSet::new();
-    map.iter().for_each(|(k, _)| {
-        unique_light_position.insert((k.0, k.1));
-    });
-    unique_light_position.len() as u64
+    result
 }
 
 #[cfg(test)]
@@ -135,28 +138,48 @@ mod day16_tests {
     #[test]
     fn day16_1_test() {
         let data = format_data(Path::new("src/day16/day16_input_test.txt"));
-        let result = get_energized_tiles(data);
+        let start = vec![(0, 0, Direction::Right)];
+        let result = get_energized_tiles(data, start);
         assert_eq!(result, 46);
     }
 
     #[test]
     fn day16_1_answer() {
         let data = format_data(Path::new("src/day16/day16_input.txt"));
-        let result = get_energized_tiles(data);
+        let start = vec![(0, 0, Direction::Right)];
+        let result = get_energized_tiles(data, start);
         assert_eq!(result, 6883);
     }
 
     #[test]
     fn day16_2_test() {
         let data = format_data(Path::new("src/day16/day16_input_test.txt"));
-        let result = get_energized_tiles(data);
-        assert_eq!(result, 145);
+        let mut starts = vec![];
+        for (row_idx, _) in data.iter().enumerate() {
+            starts.push((row_idx as u64, 0, Direction::Right));
+            starts.push((row_idx as u64, data.len() as u64 - 1, Direction::Left));
+        }
+        for (col_idx, _) in data[0].iter().enumerate() {
+            starts.push((0, col_idx as u64, Direction::Down));
+            starts.push((data[0].len() as u64 - 1, col_idx as u64, Direction::Up));
+        }
+        let result = get_energized_tiles(data, starts);
+        assert_eq!(result, 51);
     }
 
     #[test]
     fn day16_2_answer() {
         let data = format_data(Path::new("src/day16/day16_input.txt"));
-        let result = get_energized_tiles(data);
+        let mut starts = vec![];
+        for (row_idx, _) in data.iter().enumerate() {
+            starts.push((row_idx as u64, 0, Direction::Right));
+            starts.push((row_idx as u64, data.len() as u64 - 1, Direction::Left));
+        }
+        for (col_idx, _) in data[0].iter().enumerate() {
+            starts.push((0, col_idx as u64, Direction::Down));
+            starts.push((data[0].len() as u64 - 1, col_idx as u64, Direction::Up));
+        }
+        let result = get_energized_tiles(data, starts);
         assert_eq!(result, 90551);
     }
 }
