@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::Path;
 use std::vec;
 use regex::Regex;
@@ -108,8 +108,8 @@ fn find_option(
     let mut has_break = false;
     for (key, cmp, n, target) in workflow[..workflow.len()-1].iter() {
         let (lo, hi) = ranges.get(key.as_str()).unwrap();
-        let mut t = (0, 0);
-        let mut f = (0, 0);
+        let t;
+        let f;
         if cmp < &0 {
             t = (*lo, *hi.min(&(n - 1)));
             f = (*n.max(lo), *hi);
