@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::vec;
 use regex::Regex;
@@ -87,6 +87,63 @@ fn get_rating_numbers(workflows: HashMap<String, Vec<(String, i64, i64, String)>
     result
 }
 
+// idea https://www.youtube.com/watch?v=3RwIpUegdU4
+fn find_option(
+    workflows: &HashMap<String, Vec<(String, i64, i64, String)>>,
+    ranges: &mut HashMap<String, (i64, i64)>,
+    name: &str
+) -> i64 {
+    if name == "R" {
+        return 0;
+    }
+    if name == "A" {
+        let mut product = 1;
+        for (lo, hi) in ranges.values() {
+            product *= hi - lo + 1;
+        }
+        return product;
+    }
+    let workflow = workflows.get(name).unwrap();
+    let mut result = 0;
+    let mut has_break = false;
+    for (key, cmp, n, target) in workflow[..workflow.len()-1].iter() {
+        let (lo, hi) = ranges.get(key.as_str()).unwrap();
+        let mut t = (0, 0);
+        let mut f = (0, 0);
+        if cmp < &0 {
+            t = (*lo, *hi.min(&(n - 1)));
+            f = (*n.max(lo), *hi);
+        } else {
+            t = ((n + 1).max(*lo), *hi);
+            f = (*lo, *n.min(hi));
+        }
+        if t.0 <= t.1 {
+            let mut ranges_clone = ranges.clone();
+            ranges_clone.insert(key.to_string(), t);
+            result += find_option(workflows, &mut ranges_clone, target.as_str());
+        }
+        if f.0 <= f.1 {
+            ranges.insert(key.to_string(), f);
+        } else {
+            has_break = true;
+            break
+        }
+    }
+
+    if !has_break {
+        result += find_option(workflows, ranges, workflow.last().unwrap().3.as_str());
+    }
+
+    result
+}
+fn get_rating_numbers2(workflows: HashMap<String, Vec<(String, i64, i64, String)>>) -> i64 {
+    let mut ranges = HashMap::new();
+    ["x", "m", "a", "s"].iter().for_each(|&o| {
+        ranges.insert(o.to_string(), (1, 4000));
+    });
+    find_option(&workflows, &mut ranges, "in")
+}
+
 #[cfg(test)]
 mod day19_tests {
     use super::*;
@@ -107,15 +164,16 @@ mod day19_tests {
 
     #[test]
     fn day19_2_test() {
-        let (workflows, ratings) = format_data(Path::new("src/day19/day19_input_test.txt"));
-        let result = get_rating_numbers(workflows, ratings);
-        assert_eq!(result, 952408144115);
+        let (workflows, _) = format_data(Path::new("src/day19/day19_input_test.txt"));
+        let result = get_rating_numbers2(workflows);
+        assert_eq!(result, 167409079868000);
     }
 
     #[test]
     fn day19_2_answer() {
-        let (workflows, ratings) = format_data(Path::new("src/day19/day19_input.txt"));
-        let result = get_rating_numbers(workflows, ratings);
-        assert_eq!(result, 90111113594927);
+        let (workflows, _) = format_data(Path::new("src/day19/day19_input.txt"));
+        let result = get_rating_numbers2(workflows);
+        assert_eq!(result, 128163929109524);
     }
 }
+
