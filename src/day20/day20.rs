@@ -100,6 +100,71 @@ fn get_pulses_numbers(modules: &mut HashMap<String, Module>, start: Vec<(String,
     high_pulse * low_pulse
 }
 
+fn get_pulses_numbers2(modules: &mut HashMap<String, Module>, start: Vec<(String, String, bool)>) -> u64 {
+    let mut has_break = false;
+    let mut cycle_lengths: HashMap<String, u64> = HashMap::new();
+    let mut seen: HashMap<String, bool> = HashMap::new();
+    let mut result = 0;
+    let mut head = String::new();
+    modules.iter().for_each(|m| {
+        if m.1.direction.contains(&"rx".to_string()) {
+            head = m.0.to_string();
+        }
+    });
+    modules.iter().for_each(|m| {
+        if m.1.direction.contains(&head.to_string()) {
+            seen.insert(m.0.clone(), false);
+        }
+    });
+    for i in 1.. {
+        let mut current_positions = start.clone();
+        let mut next_round = vec![];
+        if has_break {
+            break;
+        }
+        loop {
+            for pos in current_positions.iter() {
+                if pos.1 == head && pos.2 {
+                    seen.insert(pos.0.to_string(), true);
+                    if cycle_lengths.get(&pos.0).is_none() {
+                        cycle_lengths.insert(pos.0.clone(), i);
+                    }
+                    if seen.values().all(|v| *v) {
+                        let values = cycle_lengths.iter().map(|c| *c.1).collect::<Vec<u64>>();
+                        result =values.iter().fold(values[0], |acc, &x| num::integer::lcm(acc, x));
+                        has_break = true;
+                    }
+                }
+
+                if let Some(module) = modules.get_mut(&pos.1) {
+
+                    if module.t == Type::Flip && !pos.2 {
+                        module.is_on = !module.is_on;
+                        module.direction.iter().for_each(|s| {
+                            next_round.push((pos.1.clone(), s.clone(), module.is_on));
+                        });
+                    }
+
+                    if module.t == Type::Conjunction {
+                        module.inputs.insert(pos.0.clone(), pos.2);
+                        // if it remembers high pulses for all inputs, it sends a low pulse
+                        let sending_pulse = !module.inputs.iter().all(|i| *i.1);
+                        module.direction.iter().for_each(|s| {
+                            next_round.push((pos.1.clone(), s.clone(), sending_pulse));
+                        });
+                    }
+                }
+            }
+            if next_round.is_empty() {
+                break;
+            }
+            current_positions = next_round;
+            next_round = vec![];
+        }
+    }
+    result
+}
+
 #[cfg(test)]
 mod day20_tests {
     use super::*;
@@ -128,8 +193,8 @@ mod day20_tests {
     #[test]
     fn day20_2_answer() {
         let (mut modules, start) = format_data(Path::new("src/day20/day20_input.txt"));
-        let result = get_pulses_numbers(&mut modules, start);
-        assert_eq!(result, 391132);
+        let result = get_pulses_numbers2(&mut modules, start);
+        assert_eq!(result, 250924073918341);
     }
 }
 
