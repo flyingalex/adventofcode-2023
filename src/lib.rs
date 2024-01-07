@@ -29,3 +29,10 @@ mod day23;
 mod day24;
 
 mod utils;
+
+trait Solution {
+    fn part1_test(&self) -> u32;
+    fn part1(&self) -> u32;
+    fn part2_test(&self) -> u32;
+    fn part2(&self) -> u32;
+}

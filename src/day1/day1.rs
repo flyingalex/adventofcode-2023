@@ -1,63 +1,87 @@
-use std::path::Path;
-use crate::utils::read_lines;
+use crate::Solution;
 
-fn is_digit_word(idx: usize, chars: &Vec<char>) -> Option<u32> {
-    let digits: Vec<&str> = vec!["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
-    let len = chars.len();
-    // check numbr word with 3,4,5 characters
-    for r in [2, 3, 4] {
-        if (idx + r) < len {
-            if let Some(found) = digits.iter().position(|&d| d == chars[idx..=idx + r].iter().collect::<String>()) {
-                return Some(found as u32 + 1);
+struct Day1;
+struct Part1;
+struct Part2;
+
+trait Part {
+    fn find_digit(&self, idx: usize, chars: &[char]) -> Option<u32>;
+}
+impl Part for Part2 {
+    fn find_digit(&self, idx: usize, chars: &[char]) -> Option<u32> {
+        if chars[idx].is_ascii_digit() {
+            return chars[idx].to_digit(10);
+        }
+
+        let digits: Vec<&str> = vec!["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+        let len = chars.len();
+        // check numbr word with 3,4,5 characters
+        for r in [2, 3, 4] {
+            if (idx + r) < len {
+                let s = chars[idx..=idx + r].iter().collect::<String>();
+                if let Some(found) = digits.iter().position(|&d| d == s) {
+                    return Some(found as u32 + 1);
+                }
             }
         }
+
+        None
+    }
+}
+
+impl Part for Part1 {
+    fn find_digit(&self, idx: usize, chars: &[char]) -> Option<u32> {
+        chars[idx].to_digit(10)
+    }
+}
+impl Day1 {
+    pub fn calibration_value<P: Part>(&self, part: P, input: &str) -> u32 {
+        input
+            .lines()
+            .map(|l| {
+                let mut first = None;
+                let mut last = None;
+                let mut first_idx = 0;
+                let chars = l.chars().collect::<Vec<char>>();
+                let mut last_idx = chars.len() - 1;
+
+                loop {
+                    if first.is_none() {
+                        first = part.find_digit(first_idx, &chars);
+                    }
+
+                    if last.is_none() {
+                        last = part.find_digit(last_idx, &chars);
+                    }
+
+                    if first.is_some() && last.is_some() {
+                        break
+                    }
+                    first_idx += 1;
+                    last_idx -= 1;
+                }
+                (first.unwrap() * 10) + last.unwrap()
+            })
+            .sum()
+    }
+}
+impl Solution for Day1 {
+    fn part1_test(&self) -> u32 {
+        self.calibration_value(Part1, include_str!("day1_input_test1.txt"))
+    }
+    fn part1(&self) -> u32 {
+        self.calibration_value(Part1, include_str!("day1_input.txt"))
     }
 
-    None
-}
-
-fn find_digit(idx: usize, chars: &Vec<char>, check_digit_word: bool) -> u32 {
-    let mut found = 0;
-    let c = chars[idx];
-    // check digit number
-    if c.is_ascii_digit() {
-        found = c.to_digit(10).unwrap();
-        // check digit word
-    } else if check_digit_word && let Some(num) = is_digit_word(idx, chars) {
-        found = num;
+    fn part2_test(&self) -> u32 {
+        self.calibration_value(Part2, include_str!("day1_input_test2.txt"))
     }
-    found
+
+    fn part2(&self) -> u32 {
+        self.calibration_value(Part2, include_str!("day1_input.txt"))
+    }
 }
 
-pub fn calibration_value(file: &Path, check_digit_word: bool) -> u32 {
-    read_lines(file)
-        .unwrap()
-        .map(|l| {
-            let mut first = 0;
-            let mut last = 0;
-            let mut first_idx = 0;
-            let chars = l.unwrap().chars().collect::<Vec<char>>();
-            let mut last_idx = chars.len() - 1;
-
-            loop {
-                if first == 0 {
-                    first = find_digit(first_idx, &chars, check_digit_word);
-                }
-
-                if last == 0 {
-                    last = find_digit(last_idx, &chars, check_digit_word);
-                }
-
-                if first != 0 && last != 0 {
-                    break
-                }
-                first_idx += 1;
-                last_idx -= 1;
-            }
-            (first * 10) + last
-        })
-        .sum()
-}
 
 #[cfg(test)]
 mod day1_tests {
@@ -65,25 +89,21 @@ mod day1_tests {
 
     #[test]
     fn day1_1_test() {
-        let result = calibration_value(Path::new("src/day1/day1_input_test1.txt"), false);
-        assert_eq!(result, 142);
+        assert_eq!(Day1.part1_test(), 142);
     }
 
     #[test]
     fn day1_1_answer() {
-        let result = calibration_value(Path::new("src/day1/day1_input.txt"), false);
-        assert_eq!(result, 55621);
+        assert_eq!(Day1.part1(), 55621);
     }
 
     #[test]
     fn day1_2_test() {
-        let result = calibration_value(Path::new("src/day1/day1_input_test2.txt"), true);
-        assert_eq!(result, 281);
+        assert_eq!(Day1.part2_test(), 281);
     }
 
     #[test]
     fn day1_2_answer() {
-        let result = calibration_value(Path::new("src/day1/day1_input.txt"), true);
-        assert_eq!(result, 53592);
+        assert_eq!(Day1.part2(), 53592);
     }
 }
