@@ -13,7 +13,9 @@ impl Part for Part2 {
             return chars[idx].to_digit(10);
         }
 
-        let digits: Vec<&str> = vec!["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+        let digits: Vec<&str> = vec![
+            "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+        ];
         let len = chars.len();
         // check numbr word with 3,4,5 characters
         for r in [2, 3, 4] {
@@ -55,7 +57,7 @@ impl Day1 {
                     }
 
                     if first.is_some() && last.is_some() {
-                        break
+                        break;
                     }
                     first_idx += 1;
                     last_idx -= 1;
@@ -81,7 +83,6 @@ impl Solution for Day1 {
         self.calibration_value(Part2, include_str!("day1_input.txt"))
     }
 }
-
 
 #[cfg(test)]
 mod day1_tests {
